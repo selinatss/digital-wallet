@@ -263,7 +263,7 @@ GET http://localhost:8080/api/v1/wallet/list/1
 ]
 ```
 
-### 6- POST /api/v1/transaction/status
+### 8- POST /api/v1/transaction/status
 
 Changes the status of a transaction.
 

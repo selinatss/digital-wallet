@@ -24,37 +24,21 @@ public class TransactionController {
 
     @GetMapping("/wallet/{walletId}")
     public ResponseEntity<List<TransactionResponse>> getTransactions(@PathVariable final long walletId) {
-        try {
-            return new ResponseEntity<>(transactionService.getTransactionsByWalletId(walletId), HttpStatus.OK);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(null); // Handle error appropriately
-        }
+         return new ResponseEntity<>(transactionService.getTransactionsByWalletId(walletId), HttpStatus.OK);
     }
 
     @PostMapping("/deposit")
     public ResponseEntity<TransactionResponse> deposit(@RequestBody final TransactionRequest transactionRequest){
-        try {
-            return ResponseEntity.ok(transactionService.deposit(transactionRequest));
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(null);
-        }
+        return ResponseEntity.ok(transactionService.deposit(transactionRequest));
     }
 
     @PostMapping("/withdraw")
     public ResponseEntity<TransactionResponse> withdraw(@RequestBody final TransactionRequest transactionRequest){
-        try {
-            return ResponseEntity.ok(transactionService.withdraw(transactionRequest));
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(null);
-        }
+        return ResponseEntity.ok(transactionService.withdraw(transactionRequest));
     }
 
     @PostMapping("/status")
     public ResponseEntity<TransactionResponse> approveTransaction(@RequestBody final TransactionApprovalRequest transactionApprovalRequest) {
-        try {
-            return ResponseEntity.ok(transactionService.approveTransaction(transactionApprovalRequest));
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(null);
-        }
+         return ResponseEntity.ok(transactionService.approveTransaction(transactionApprovalRequest));
     }
 }

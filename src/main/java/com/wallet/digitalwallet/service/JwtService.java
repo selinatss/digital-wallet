@@ -19,7 +19,7 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-    private String secretKey = "your-secret-key";
+    private String secretKey = "my-super-secret-key-for-jwt-generation-and-validation";
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
@@ -55,7 +55,6 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+        return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 }

@@ -26,20 +26,12 @@ public class WalletController {
 
     @PostMapping("/create")
     public ResponseEntity<WalletResponse> createWallet(@RequestBody final CreateWalletRequest createWalletRequest) {
-        try {
             return new ResponseEntity<>(walletService.createWallet(createWalletRequest), HttpStatus.OK);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(null);
-        }
     }
 
     @GetMapping("/list")
     public ResponseEntity<List<WalletResponse>> listWallets(@PathVariable String tckn) {
-        try {
             return new ResponseEntity<>(walletService.listWallets(tckn), HttpStatus.OK);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(null);
-        }
     }
 
 }

@@ -67,6 +67,7 @@ class WalletControllerTest {
         Assertions.assertEquals(wallets, response.getBody());
     }
 
+
     @Test
     void listWalletsShouldReturnInternalServerErrorWhenExceptionOccurs() {
         when(walletService.listWallets("1233445556")).thenThrow(new RuntimeException());

@@ -10,5 +10,8 @@ public record CreateWalletRequest(String walletName, Currency currency, boolean 
         if (currency == null) {
             throw new IllegalArgumentException("Currency cannot be null.");
         }
+        if (tckn == null || tckn.length() != 11 || !tckn.matches("\\d{11}")) {
+            throw new IllegalArgumentException("TCKN cannot be null or blank");
+        }
     }
 }

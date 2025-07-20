@@ -7,7 +7,6 @@ import com.wallet.digitalwallet.model.request.CreateWalletRequest;
 import com.wallet.digitalwallet.model.response.WalletResponse;
 import com.wallet.digitalwallet.repository.CustomerRepository;
 import com.wallet.digitalwallet.repository.WalletRepository;
-import com.wallet.digitalwallet.service.WalletService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,6 +32,8 @@ class WalletServiceTest {
     @InjectMocks
     private WalletService walletService;
 
+    String token = "token";
+
     @Test
     void createWalletShouldSaveWalletWithInitialBalances() {
         CreateWalletRequest request = new CreateWalletRequest("Test Wallet", Currency.USD, true, true, "12345678901");
@@ -46,11 +47,10 @@ class WalletServiceTest {
                 .balance(BigDecimal.ZERO)
                 .usableBalance(BigDecimal.ZERO)
                 .build();
-
         when(customerRepository.findByTckn(request.tckn())).thenReturn(customer);
         when(walletRepository.save(Mockito.any(Wallet.class))).thenReturn(wallet);
 
-        WalletResponse createdWallet = walletService.createWallet(request);
+        WalletResponse createdWallet = walletService.createWallet(request, token);
 
         assertEquals("Test Wallet", createdWallet.walletName());
         assertEquals(Currency.USD, createdWallet.currency());
@@ -65,7 +65,7 @@ class WalletServiceTest {
         CreateWalletRequest request = new CreateWalletRequest("Test Wallet", Currency.USD, true, true, "12345678901");
         when(customerRepository.findByTckn(request.tckn())).thenReturn(null);
 
-        assertThrows(RuntimeException.class, () -> walletService.createWallet(request));
+        assertThrows(RuntimeException.class, () -> walletService.createWallet(request, token));
     }
 
     @Test
@@ -80,7 +80,7 @@ class WalletServiceTest {
         when(customerRepository.findByTckn(tckn)).thenReturn(customer);
         when(walletRepository.findByCustomerId(customer.getId())).thenReturn(wallets);
 
-        List<WalletResponse> result = walletService.listWallets(tckn);
+        List<WalletResponse> result = walletService.listWallets(tckn, token);
 
         assertEquals(1, result.size());
     }
@@ -91,7 +91,7 @@ class WalletServiceTest {
 
         when(customerRepository.findByTckn(tckn)).thenReturn(null);
 
-        assertThrows(RuntimeException.class, () -> walletService.listWallets(tckn));
+        assertThrows(RuntimeException.class, () -> walletService.listWallets(tckn, token));
     }
 
     @Test
@@ -103,6 +103,6 @@ class WalletServiceTest {
         when(customerRepository.findByTckn(tckn)).thenReturn(customer);
         when(walletRepository.findByCustomerId(customer.getId())).thenReturn(List.of());
 
-        assertThrows(RuntimeException.class, () -> walletService.listWallets(tckn));
+        assertThrows(RuntimeException.class, () -> walletService.listWallets(tckn, token));
     }
 }

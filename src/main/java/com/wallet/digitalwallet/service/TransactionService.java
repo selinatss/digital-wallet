@@ -2,6 +2,7 @@ package com.wallet.digitalwallet.service;
 
 import com.wallet.digitalwallet.entity.Transaction;
 import com.wallet.digitalwallet.entity.Wallet;
+import com.wallet.digitalwallet.enums.Role;
 import com.wallet.digitalwallet.enums.TransactionStatus;
 import com.wallet.digitalwallet.enums.TransactionType;
 import com.wallet.digitalwallet.model.request.TransactionApprovalRequest;
@@ -12,18 +13,22 @@ import com.wallet.digitalwallet.repository.WalletRepository;
 import com.wallet.digitalwallet.utils.Constants;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @AllArgsConstructor
 @Service
 public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final WalletRepository walletRepository;
+    private final JwtService jwtService;
 
-    public List<TransactionResponse> getTransactionsByWalletId(long walletId) {
+    public List<TransactionResponse> getTransactionsByWalletId(long walletId, String token) {
+        checkUserAuthorization(walletId, token);
         List<Transaction> transactionList = transactionRepository.findByWalletId(walletId)
                 .orElseThrow(() -> new RuntimeException("No transactions found for this wallet"));
 
@@ -41,15 +46,17 @@ public class TransactionService {
         return transactionResponses;
     }
 
+
     @Transactional
-    public TransactionResponse deposit(final TransactionRequest transactionRequest) {
+    public TransactionResponse deposit(final TransactionRequest transactionRequest, String token) {
+        checkUserAuthorization(transactionRequest.walletId(), token);
         Wallet wallet = walletRepository.findById(transactionRequest.walletId())
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
         Transaction transaction = Transaction.builder()
                 .wallet(wallet)
                 .amount(transactionRequest.amount())
-                .oppositeParty(transactionRequest.oppositeParty())
+                .oppositeParty("")
                 .oppositePartyType(transactionRequest.oppositePartyType())
                 .transactionType(TransactionType.DEPOSIT)
                 .createdAt(LocalDateTime.now())
@@ -77,7 +84,8 @@ public class TransactionService {
 
 
     @Transactional
-    public TransactionResponse withdraw(final TransactionRequest transactionRequest) {
+    public TransactionResponse withdraw(final TransactionRequest transactionRequest, String token) {
+        checkUserAuthorization(transactionRequest.walletId(), token);
         Wallet wallet = walletRepository.findById(transactionRequest.walletId())
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
@@ -92,7 +100,7 @@ public class TransactionService {
         Transaction transaction = Transaction.builder()
                 .wallet(wallet)
                 .amount(transactionRequest.amount())
-                .oppositeParty(transactionRequest.oppositeParty())
+                .oppositeParty("")
                 .oppositePartyType(transactionRequest.oppositePartyType())
                 .transactionType(TransactionType.WITHDRAWAL)
                 .createdAt(LocalDateTime.now())
@@ -119,12 +127,12 @@ public class TransactionService {
     }
 
     @Transactional
-    public TransactionResponse approveTransaction(final TransactionApprovalRequest transactionApprovalRequest){
+    public TransactionResponse approveTransaction(final TransactionApprovalRequest transactionApprovalRequest, String token){
         Transaction transaction = transactionRepository.findById(transactionApprovalRequest.transactionId())
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));
 
         Wallet wallet = transaction.getWallet();
-
+        checkUserAuthorization(wallet.getId(), token);
         if(transaction.getStatus() != TransactionStatus.PENDING) {
             throw new RuntimeException("Transaction is not pending approval");
         }
@@ -156,5 +164,17 @@ public class TransactionService {
                 wallet.getBalance(),
                 wallet.getUsableBalance(),
                 LocalDateTime.now());
+    }
+
+    private void checkUserAuthorization(long walletId, String token) {
+        String username = jwtService.extractUsername(token);
+        String role = jwtService.extractRole(token);
+        if(!role.equals(Role.EMPLOYEE)){
+            Wallet wallet = walletRepository.findById(walletId).get();
+            if(wallet == null || !wallet.getCustomer().getUserName().equals(username)) {
+                log.error("Unauthorized access attempt by user: {}", username);
+                throw new RuntimeException("Unauthorized access to this wallet");
+            }
+        }
     }
 }

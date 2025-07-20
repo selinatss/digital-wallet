@@ -25,7 +25,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
 
     public RegisterResponse registerUser(final RegisterRequest request) {
-        if (customerRepository.findByTckn(request.tckn()) != null) {
+        if (customerRepository.findByTckn(request.tckn()) != null || customerRepository.findByUserName(request.userName()) != null) {
             throw new RuntimeException("User already exists");
         }
 

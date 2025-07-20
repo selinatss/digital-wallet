@@ -2,17 +2,13 @@ package com.wallet.digitalwallet.controller;
 
 import com.wallet.digitalwallet.entity.Wallet;
 import com.wallet.digitalwallet.model.request.CreateWalletRequest;
+import com.wallet.digitalwallet.model.request.ListWalletRequest;
 import com.wallet.digitalwallet.model.response.WalletResponse;
 import com.wallet.digitalwallet.service.WalletService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
 
 
 import java.util.List;
@@ -25,13 +21,12 @@ public class WalletController {
     private final WalletService walletService;
 
     @PostMapping("/create")
-    public ResponseEntity<WalletResponse> createWallet(@RequestBody final CreateWalletRequest createWalletRequest) {
-            return new ResponseEntity<>(walletService.createWallet(createWalletRequest), HttpStatus.OK);
+    public ResponseEntity<WalletResponse> createWallet(@RequestBody final CreateWalletRequest createWalletRequest, @RequestHeader("Authorization") final String token) {
+            return new ResponseEntity<>(walletService.createWallet(createWalletRequest, token.substring(7)), HttpStatus.OK);
     }
 
-    @GetMapping("/list")
-    public ResponseEntity<List<WalletResponse>> listWallets(@PathVariable String tckn) {
-            return new ResponseEntity<>(walletService.listWallets(tckn), HttpStatus.OK);
+    @PostMapping("/list")
+    public ResponseEntity<List<WalletResponse>> listWallets(@RequestBody final ListWalletRequest listWalletRequest, @RequestHeader("Authorization") final String token) {
+            return new ResponseEntity<>(walletService.listWallets(listWalletRequest.tckn(), token.substring(7)), HttpStatus.OK);
     }
-
 }

@@ -37,17 +37,19 @@ class TransactionServiceTest {
     @InjectMocks
     private TransactionService transactionService;
 
+    String token = "validToken";
+
     @Test
     void depositShouldIncreaseWalletBalanceAndUsableBalanceWhenAmountIsBelowLimit() {
         Wallet wallet = new Wallet();
         wallet.setBalance(BigDecimal.ZERO);
         wallet.setUsableBalance(BigDecimal.ZERO);
 
-        TransactionRequest request = new TransactionRequest(1L, BigDecimal.valueOf(500), "Party", PartyType.IBAN);
+        TransactionRequest request = new TransactionRequest(1L, BigDecimal.valueOf(500),  PartyType.IBAN);
 
         when(walletRepository.findById(1L)).thenReturn(Optional.of(wallet));
 
-        TransactionResponse response = transactionService.deposit(request);
+        TransactionResponse response = transactionService.deposit(request, token);
 
         assertEquals(BigDecimal.valueOf(500), wallet.getBalance());
         assertEquals(BigDecimal.valueOf(500), wallet.getUsableBalance());
@@ -59,11 +61,11 @@ class TransactionServiceTest {
         Wallet wallet = new Wallet();
         wallet.setBalance(BigDecimal.ZERO);
 
-        TransactionRequest request = new TransactionRequest(1L, Constants.LIMIT_AMOUNT.add(BigDecimal.ONE), "Party", PartyType.PAYMENT);
+        TransactionRequest request = new TransactionRequest(1L, Constants.LIMIT_AMOUNT.add(BigDecimal.ONE),  PartyType.PAYMENT);
 
         when(walletRepository.findById(1L)).thenReturn(Optional.of(wallet));
 
-        TransactionResponse response = transactionService.deposit(request);
+        TransactionResponse response = transactionService.deposit(request, token);
 
         assertEquals(Constants.LIMIT_AMOUNT.add(BigDecimal.ONE), wallet.getBalance());
         assertEquals(BigDecimal.ZERO, wallet.getUsableBalance());
@@ -77,11 +79,11 @@ class TransactionServiceTest {
         wallet.setUsableBalance(BigDecimal.valueOf(1000));
         wallet.setActiveForWithdraw(true);
 
-        TransactionRequest request = new TransactionRequest(1L, BigDecimal.valueOf(500), "Party", PartyType.IBAN);
+        TransactionRequest request = new TransactionRequest(1L, BigDecimal.valueOf(500),  PartyType.IBAN);
 
         when(walletRepository.findById(1L)).thenReturn(Optional.of(wallet));
 
-        TransactionResponse response = transactionService.withdraw(request);
+        TransactionResponse response = transactionService.withdraw(request, token);
 
         assertEquals(BigDecimal.valueOf(500), wallet.getBalance());
         assertEquals(BigDecimal.valueOf(500), wallet.getUsableBalance());
@@ -95,11 +97,11 @@ class TransactionServiceTest {
         wallet.setUsableBalance(BigDecimal.valueOf(100));
         wallet.setActiveForWithdraw(true);
 
-        TransactionRequest request = new TransactionRequest(1L, BigDecimal.valueOf(500), "Party", PartyType.IBAN);
+        TransactionRequest request = new TransactionRequest(1L, BigDecimal.valueOf(500),  PartyType.IBAN);
 
         when(walletRepository.findById(1L)).thenReturn(Optional.of(wallet));
 
-        assertThrows(RuntimeException.class, () -> transactionService.withdraw(request));
+        assertThrows(RuntimeException.class, () -> transactionService.withdraw(request, token));
     }
 
     @Test
@@ -119,7 +121,7 @@ class TransactionServiceTest {
 
         when(transactionRepository.findById(transaction.getId())).thenReturn(Optional.of(transaction));
 
-        TransactionResponse response = transactionService.approveTransaction(request);
+        TransactionResponse response = transactionService.approveTransaction(request, token);
 
         assertEquals(BigDecimal.valueOf(1000), wallet.getBalance());
         assertEquals(BigDecimal.valueOf(1000), wallet.getUsableBalance());
@@ -134,6 +136,6 @@ class TransactionServiceTest {
 
         when(transactionRepository.findById(transaction.getId())).thenReturn(Optional.of(transaction));
 
-        assertThrows(RuntimeException.class, () -> transactionService.approveTransaction(request));
+        assertThrows(RuntimeException.class, () -> transactionService.approveTransaction(request, token));
     }
 }

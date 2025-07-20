@@ -19,13 +19,12 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-    private String secretKey = "my-super-secret-key-for-jwt-generation-and-validation";
+    private String secretKey = "6rSyfKqYfN8Vm6SydlDxkAvU3Kp+2q8iJ1uZH3lSYHc=";
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
 
-        // İlk yetkiyi ROLE_ prefix olmadan ekle
         String role = authorities.stream().findFirst().get().getAuthority().replace("ROLE_", "");
         claims.put("role", role);
 

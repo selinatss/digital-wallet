@@ -11,6 +11,8 @@ import com.wallet.digitalwallet.model.response.TransactionResponse;
 import com.wallet.digitalwallet.repository.TransactionRepository;
 import com.wallet.digitalwallet.repository.WalletRepository;
 import com.wallet.digitalwallet.utils.Constants;
+import com.wallet.digitalwallet.utils.ErrorMessages;
+import com.wallet.digitalwallet.utils.TransactionResponseConverter;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,25 +27,15 @@ import java.util.List;
 public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final WalletRepository walletRepository;
+    private final TransactionResponseConverter transactionResponseConverter;
     private final JwtService jwtService;
 
     public List<TransactionResponse> getTransactionsByWalletId(long walletId, String token) {
         checkUserAuthorization(walletId, token);
         List<Transaction> transactionList = transactionRepository.findByWalletId(walletId)
-                .orElseThrow(() -> new RuntimeException("No transactions found for this wallet"));
+                .orElseThrow(() -> new RuntimeException(ErrorMessages.NO_TRANSACTIONS_FOUND));
 
-        List<TransactionResponse> transactionResponses = transactionList.stream()
-                .map(transaction -> new TransactionResponse(
-                        transaction.getId(),
-                        transaction.getWallet().getId(),
-                        transaction.getTransactionType(),
-                        transaction.getStatus(),
-                        transaction.getWallet().getUsableBalance(),
-                        transaction.getWallet().getBalance(),
-                        transaction.getCreatedAt()))
-                .toList();
-
-        return transactionResponses;
+        return transactionResponseConverter.convertToResponseList(transactionList);
     }
 
 
@@ -51,7 +43,7 @@ public class TransactionService {
     public TransactionResponse deposit(final TransactionRequest transactionRequest, String token) {
         checkUserAuthorization(transactionRequest.walletId(), token);
         Wallet wallet = walletRepository.findById(transactionRequest.walletId())
-                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+                .orElseThrow(() -> new RuntimeException(ErrorMessages.WALLET_NOT_FOUND));
 
         Transaction transaction = Transaction.builder()
                 .wallet(wallet)
@@ -73,13 +65,7 @@ public class TransactionService {
 
         transactionRepository.save(transaction);
         walletRepository.save(wallet);
-        return new TransactionResponse(transaction.getId(),
-                                       transaction.getWallet().getId(),
-                                       transaction.getTransactionType(),
-                                       transaction.getStatus(),
-                                       wallet.getBalance(),
-                                       wallet.getUsableBalance(),
-                                       LocalDateTime.now());
+        return transactionResponseConverter.convertToResponse(transaction);
     }
 
 
@@ -87,14 +73,14 @@ public class TransactionService {
     public TransactionResponse withdraw(final TransactionRequest transactionRequest, String token) {
         checkUserAuthorization(transactionRequest.walletId(), token);
         Wallet wallet = walletRepository.findById(transactionRequest.walletId())
-                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+                .orElseThrow(() -> new RuntimeException(ErrorMessages.WALLET_NOT_FOUND));
 
        if(!wallet.isActiveForWithdraw()){
-           throw new RuntimeException("Withdrawals are not allowed for this wallet");
+           throw new RuntimeException(ErrorMessages.WITHDRAWALS_ARE_NOT_ALLOWED_FOR_THIS_WALLET);
        }
 
         if(wallet.getUsableBalance().compareTo(transactionRequest.amount()) < 0){
-           throw new RuntimeException("Insufficient usable balance");
+           throw new RuntimeException(ErrorMessages.INSUFFICIENT_USABLE_BALANCE);
        }
 
         Transaction transaction = Transaction.builder()
@@ -117,24 +103,19 @@ public class TransactionService {
 
         transactionRepository.save(transaction);
         walletRepository.save(wallet);
-        return new TransactionResponse(transaction.getId(),
-                transaction.getWallet().getId(),
-                transaction.getTransactionType(),
-                transaction.getStatus(),
-                wallet.getBalance(),
-                wallet.getUsableBalance(),
-                LocalDateTime.now());
+        return transactionResponseConverter.convertToResponse(transaction);
     }
 
     @Transactional
-    public TransactionResponse approveTransaction(final TransactionApprovalRequest transactionApprovalRequest, String token){
+    public TransactionResponse changeTransactionStatus(final TransactionApprovalRequest transactionApprovalRequest, String token){
         Transaction transaction = transactionRepository.findById(transactionApprovalRequest.transactionId())
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+                .orElseThrow(() -> new RuntimeException(ErrorMessages.TRANSACTION_NOT_FOUND));
 
         Wallet wallet = transaction.getWallet();
         checkUserAuthorization(wallet.getId(), token);
         if(transaction.getStatus() != TransactionStatus.PENDING) {
-            throw new RuntimeException("Transaction is not pending approval");
+            log.error("Transaction with ID {} is not pending", transaction.getId());
+            throw new RuntimeException(ErrorMessages.TRANSACTION_IS_NOT_PENDING);
         }
 
         if(transactionApprovalRequest.status() == TransactionStatus.APPROVED){
@@ -152,28 +133,22 @@ public class TransactionService {
                 wallet.setUsableBalance(wallet.getUsableBalance().add(transaction.getAmount()));
             }
         }else{
-            throw new RuntimeException("Invalid transaction status");
+            throw new RuntimeException(ErrorMessages.INVALID_TRANSACTION_STATUS);
         }
 
         transactionRepository.save(transaction);
         walletRepository.save(wallet);
-        return new TransactionResponse(transaction.getId(),
-                transaction.getWallet().getId(),
-                transaction.getTransactionType(),
-                transaction.getStatus(),
-                wallet.getBalance(),
-                wallet.getUsableBalance(),
-                LocalDateTime.now());
+        return transactionResponseConverter.convertToResponse(transaction);
     }
 
-    private void checkUserAuthorization(long walletId, String token) {
+    public void checkUserAuthorization(long walletId, String token) {
         String username = jwtService.extractUsername(token);
         String role = jwtService.extractRole(token);
-        if(!role.equals(Role.EMPLOYEE)){
+        if(!role.equals(Role.EMPLOYEE.name())){
             Wallet wallet = walletRepository.findById(walletId).get();
             if(wallet == null || !wallet.getCustomer().getUserName().equals(username)) {
                 log.error("Unauthorized access attempt by user: {}", username);
-                throw new RuntimeException("Unauthorized access to this wallet");
+                throw new RuntimeException(ErrorMessages.UNAUTHORIZED_ACCESS_TO_THIS_WALLET);
             }
         }
     }

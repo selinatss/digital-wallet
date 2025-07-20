@@ -36,9 +36,7 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**","/h2-console/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("EMPLOYEE")
-                        .requestMatchers("/api/customer/**").hasAnyRole("CUSTOMER", "EMPLOYEE")
+                        .requestMatchers("/api/v1/auth/**","/h2-console/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

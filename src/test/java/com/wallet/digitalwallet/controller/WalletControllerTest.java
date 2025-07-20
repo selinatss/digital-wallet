@@ -1,10 +1,10 @@
 package com.wallet.digitalwallet.controller;
 
-import com.wallet.digitalwallet.controller.WalletController;
-import com.wallet.digitalwallet.entity.Wallet;
 import com.wallet.digitalwallet.enums.Currency;
+import com.wallet.digitalwallet.enums.PartyType;
 import com.wallet.digitalwallet.model.request.CreateWalletRequest;
 import com.wallet.digitalwallet.model.request.ListWalletRequest;
+import com.wallet.digitalwallet.model.request.TransactionRequest;
 import com.wallet.digitalwallet.model.response.WalletResponse;
 import com.wallet.digitalwallet.service.WalletService;
 import org.junit.jupiter.api.Assertions;
@@ -19,7 +19,8 @@ import org.springframework.http.ResponseEntity;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,14 +32,13 @@ class WalletControllerTest {
     @InjectMocks
     private WalletController walletController;
 
-    String token = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiRU1QTE9ZRUUiLCJzdWIiOiJzZWxpbmF0aXMiLCJpYXQiOjE3NTMwMDIxMTgsImV4cCI6MTc1MzA4ODUxOH0.RmZFmMobpS5CnDNRclWGjOMdYnf0v-iEMwpl04-jqus";
-
+    String token = "Bearer testToken";
     @Test
     void createWalletShouldReturnWalletWhenRequestIsValid() {
-        CreateWalletRequest request = new CreateWalletRequest("Test Wallet", Currency.USD, true, true, "12345678901");
-        WalletResponse walletResponse = new WalletResponse(1l, "walletName", Currency.USD, true, true, new BigDecimal(0.0), new BigDecimal(0.0), "12345678901");
+        CreateWalletRequest request = new CreateWalletRequest("Test Wallet", Currency.USD, true, true, 1224L);
+        WalletResponse walletResponse = new WalletResponse(1l, "walletName", Currency.USD, true, true, new BigDecimal(0.0), new BigDecimal(0.0), 1234l);
 
-        when(walletService.createWallet(request, token)).thenReturn(walletResponse);
+        when(walletService.createWallet(request, "testToken")).thenReturn(walletResponse);
 
         ResponseEntity<WalletResponse> response = walletController.createWallet(request, token);
 
@@ -48,23 +48,23 @@ class WalletControllerTest {
 
     @Test
     void createWalletShouldReturnInternalServerErrorWhenExceptionOccurs() {
-        CreateWalletRequest request = new CreateWalletRequest("Test Wallet", Currency.USD, true, true, "12345678901");
+        CreateWalletRequest request = new CreateWalletRequest("Test Wallet", Currency.USD, true, true, 1234L);
 
-        when(walletService.createWallet(request, token)).thenThrow(new RuntimeException());
+        when(walletService.createWallet(request, "testToken")).thenThrow(new RuntimeException());
 
-        ResponseEntity<WalletResponse> response = walletController.createWallet(request, token);
-
-        Assertions.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertNull(response.getBody());
+        RuntimeException thrown = assertThrows(
+                RuntimeException.class,
+                () -> walletController.createWallet(request, token)
+        );
     }
 
     @Test
     void listWalletsShouldReturnListOfWalletsWhenServiceReturnsData() {
-        List<WalletResponse> wallets = List.of(new WalletResponse(1234L, "Test Wallet", Currency.USD, true, true, new BigDecimal(100.0), new BigDecimal(100.0), "12345678901"));
+        List<WalletResponse> wallets = List.of(new WalletResponse(1234L, "Test Wallet", Currency.USD, true, true, new BigDecimal(100.0), new BigDecimal(100.0), 1234l));
 
-        when(walletService.listWallets("1233445556", token)).thenReturn(wallets);
+        when(walletService.listWallets(1234L, "testToken")).thenReturn(wallets);
 
-        ResponseEntity<List<WalletResponse>> response = walletController.listWallets(new ListWalletRequest("12345678901"), token);
+        ResponseEntity<List<WalletResponse>> response = walletController.listWallets(1234L, token);
 
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
         Assertions.assertEquals(wallets, response.getBody());
@@ -73,11 +73,14 @@ class WalletControllerTest {
 
     @Test
     void listWalletsShouldReturnInternalServerErrorWhenExceptionOccurs() {
-        when(walletService.listWallets("1233445556", token)).thenThrow(new RuntimeException());
+        TransactionRequest request = new TransactionRequest(1234L, new BigDecimal(1000.0), PartyType.IBAN);
 
-        ResponseEntity<List<WalletResponse>> response = walletController.listWallets(new ListWalletRequest("12345678901"), token);
+        when(walletService.listWallets(1234L, "testToken"))
+                .thenThrow(new RuntimeException());
 
-        Assertions.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertNull(response.getBody());
+        RuntimeException thrown = assertThrows(
+                RuntimeException.class,
+                () -> walletController.listWallets(1234L, token)
+        );
     }
 }

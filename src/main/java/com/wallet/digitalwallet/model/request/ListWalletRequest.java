@@ -1,9 +1,9 @@
 package com.wallet.digitalwallet.model.request;
 
-public record ListWalletRequest(String tckn) {
+public record ListWalletRequest(long customerId) {
     public ListWalletRequest {
-        if (tckn == null || tckn.length() != 11 || !tckn.matches("\\d{11}")) {
-            throw new IllegalArgumentException("TCKN cannot be null or blank");
-        }
+       if(customerId <= 0) {
+           throw new IllegalArgumentException("Customer ID must be greater than zero.");
+       }
     }
 }

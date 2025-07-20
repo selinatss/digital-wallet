@@ -24,7 +24,7 @@ public record RegisterRequest(
             throw new IllegalArgumentException("Surname cannot be null or blank");
         }
         if (tckn == null || tckn.length() != 11 || !tckn.matches("\\d{11}")) {
-            throw new IllegalArgumentException("TCKN cannot be null or blank");
+            throw new IllegalArgumentException("Invalid tckn format. It must be 11 digits.");
         }
     }
 };

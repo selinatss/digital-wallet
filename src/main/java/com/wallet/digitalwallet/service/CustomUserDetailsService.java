@@ -4,6 +4,7 @@ import com.wallet.digitalwallet.entity.Customer;
 import com.wallet.digitalwallet.model.request.RegisterRequest;
 import com.wallet.digitalwallet.model.response.RegisterResponse;
 import com.wallet.digitalwallet.repository.CustomerRepository;
+import com.wallet.digitalwallet.utils.ErrorMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,7 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     public RegisterResponse registerUser(final RegisterRequest request) {
         if (customerRepository.findByTckn(request.tckn()) != null || customerRepository.findByUserName(request.userName()) != null) {
-            throw new RuntimeException("User already exists");
+            throw new RuntimeException(ErrorMessages.USER_ALREADY_EXISTS);
         }
 
         Customer customer = new Customer();
@@ -38,7 +39,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         customer.setRole(request.role());
 
         customerRepository.save(customer);
-        return new RegisterResponse(customer.getUserName(), customer.getName(), customer.getSurname(), customer.getRole(), "successfully registered");
+        return new RegisterResponse(customer.getId(),customer.getUserName(), customer.getName(), customer.getSurname(), customer.getRole(), "successfully registered");
     }
 
 
@@ -46,6 +47,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
         Customer customer = customerRepository.findByUserName(username);
+        if (customer == null) {
+            throw new UsernameNotFoundException(ErrorMessages.USER_NOT_FOUND + username);
+        }
         return new org.springframework.security.core.userdetails.User(
                 customer.getUserName(),
                 customer.getPassword(),

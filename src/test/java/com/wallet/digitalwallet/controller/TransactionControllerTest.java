@@ -1,16 +1,11 @@
 package com.wallet.digitalwallet.controller;
 
-import com.wallet.digitalwallet.controller.TransactionController;
-import com.wallet.digitalwallet.entity.Customer;
-import com.wallet.digitalwallet.entity.Transaction;
-import com.wallet.digitalwallet.entity.Wallet;
 import com.wallet.digitalwallet.enums.PartyType;
 import com.wallet.digitalwallet.enums.TransactionStatus;
 import com.wallet.digitalwallet.enums.TransactionType;
 import com.wallet.digitalwallet.model.request.TransactionApprovalRequest;
 import com.wallet.digitalwallet.model.request.TransactionRequest;
 import com.wallet.digitalwallet.model.response.TransactionResponse;
-import com.wallet.digitalwallet.service.JwtService;
 import com.wallet.digitalwallet.service.TransactionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +19,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,13 +29,11 @@ class TransactionControllerTest {
     @Mock
     private TransactionService transactionService;
 
-    @Mock
-    private JwtService jwtService;
 
     @InjectMocks
     private TransactionController transactionController;
 
-    String token = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiRU1QTE9ZRUUiLCJzdWIiOiJzZWxpbmF0aXMiLCJpYXQiOjE3NTMwMDIxMTgsImV4cCI6MTc1MzA4ODUxOH0.RmZFmMobpS5CnDNRclWGjOMdYnf0v-iEMwpl04-jqus";
+    String token = "Bearer testToken";
 
 
     @Test
@@ -47,7 +41,7 @@ class TransactionControllerTest {
         long walletId = 1L;
         List<TransactionResponse> transactions = List.of(new TransactionResponse(1234L, 1234L, TransactionType.WITHDRAWAL, TransactionStatus.APPROVED, new BigDecimal(100.0), new BigDecimal(90.0), null));
 
-        when(transactionService.getTransactionsByWalletId(walletId, token)).thenReturn(transactions);
+        when(transactionService.getTransactionsByWalletId(walletId, "testToken")).thenReturn(transactions);
 
         ResponseEntity<List<TransactionResponse>> response = transactionController.getTransactions(walletId, token);
 
@@ -60,7 +54,7 @@ class TransactionControllerTest {
         TransactionRequest request = new TransactionRequest(1234L, new BigDecimal(10.0), PartyType.IBAN);
         TransactionResponse response = new TransactionResponse(1234L, 1234L, TransactionType.WITHDRAWAL, TransactionStatus.APPROVED, new BigDecimal(100.0), new BigDecimal(90.0), null);
 
-        when(transactionService.deposit(request, token)).thenReturn(response);
+        when(transactionService.deposit(request, "testToken")).thenReturn(response);
 
         ResponseEntity<TransactionResponse> result = transactionController.deposit(request, token);
 
@@ -73,7 +67,7 @@ class TransactionControllerTest {
         TransactionRequest request = new TransactionRequest(1234L, new BigDecimal(10.0), PartyType.IBAN);
         TransactionResponse response = new TransactionResponse(1234L, 1234L, TransactionType.WITHDRAWAL, TransactionStatus.APPROVED, new BigDecimal(100.0), new BigDecimal(90.0), null);
 
-        when(transactionService.withdraw(request, token)).thenReturn(response);
+        when(transactionService.withdraw(request, "testToken")).thenReturn(response);
 
         ResponseEntity<TransactionResponse> result = transactionController.withdraw(request, token);
 
@@ -86,7 +80,7 @@ class TransactionControllerTest {
         TransactionApprovalRequest request = new TransactionApprovalRequest(1234L, TransactionStatus.PENDING);
         TransactionResponse response = new TransactionResponse(1234L, 1234L, TransactionType.WITHDRAWAL, TransactionStatus.APPROVED, new BigDecimal(100.0), new BigDecimal(90.0), null);
 
-        when(transactionService.approveTransaction(request, token)).thenReturn(response);
+        when(transactionService.changeTransactionStatus(request, "testToken")).thenReturn(response);
 
         ResponseEntity<TransactionResponse> result = transactionController.approveTransaction(request, token);
 
@@ -95,43 +89,45 @@ class TransactionControllerTest {
     }
 
     @Test
-    void depositShouldReturnInternalServerErrorWhenUnexpectedExceptionOccurs() {
-        TransactionRequest request = new TransactionRequest(1234L, new BigDecimal(10.0), PartyType.IBAN);
-        String token = "validToken";
-        Wallet wallet = new Wallet();
-        wallet.setCustomer(new Customer());
+    void getTransactionsShouldReturnEmptyListWhenNoTransactionsExist() {
+        long walletId = 1L;
 
-        when(jwtService.extractUsername(token)).thenReturn("user");
-        when(jwtService.extractRole(token)).thenReturn("CUSTOMER");
-        when(transactionService.deposit(request, token)).thenThrow(new RuntimeException("Unexpected error"));
+        when(transactionService.getTransactionsByWalletId(walletId, "testToken")).thenReturn(List.of());
 
-        ResponseEntity<TransactionResponse> result = transactionController.deposit(request, token);
+        ResponseEntity<List<TransactionResponse>> response = transactionController.getTransactions(walletId, token);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
-        assertNull(result.getBody());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(0, response.getBody().size());
     }
 
     @Test
-    void withdrawShouldReturnInternalServerErrorWhenUnexpectedExceptionOccurs() {
-        TransactionRequest request = new TransactionRequest(1234L, new BigDecimal(10.0), PartyType.IBAN);
+    void withdrawShouldThrowExceptionWhenAmountExceedsUsableBalance() {
+        TransactionRequest request = new TransactionRequest(1234L, new BigDecimal(1000.0), PartyType.IBAN);
 
-        when(transactionService.withdraw(request, token)).thenThrow(new RuntimeException("Unexpected error"));
+        when(transactionService.withdraw(request, "testToken"))
+                .thenThrow(new IllegalArgumentException("Insufficient balance"));
 
-        ResponseEntity<TransactionResponse> result = transactionController.withdraw(request, token);
+        IllegalArgumentException thrown = assertThrows(
+                IllegalArgumentException.class,
+                () -> transactionController.withdraw(request, token)
+        );
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
-        assertNull(result.getBody());
+        assertEquals("Insufficient balance", thrown.getMessage());
     }
 
+
     @Test
-    void approveTransactionShouldReturnInternalServerErrorWhenUnexpectedExceptionOccurs() {
-        TransactionApprovalRequest request = new TransactionApprovalRequest(1234L, TransactionStatus.PENDING);
+    void approveTransactionShouldReturnBadRequestWhenTransactionIdIsInvalid() {
+        TransactionApprovalRequest request = new TransactionApprovalRequest(9999L, TransactionStatus.APPROVED);
 
-        when(transactionService.approveTransaction(request, token)).thenThrow(new RuntimeException("Unexpected error"));
+        when(transactionService.changeTransactionStatus(request, "testToken"))
+                .thenThrow(new IllegalArgumentException("Invalid transaction ID"));
 
-        ResponseEntity<TransactionResponse> result = transactionController.approveTransaction(request, token);
+        IllegalArgumentException thrown = assertThrows(
+                IllegalArgumentException.class,
+                () -> transactionController.approveTransaction(request, token)
+        );
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
-        assertNull(result.getBody());
+        assertEquals("Invalid transaction ID", thrown.getMessage());
     }
 }

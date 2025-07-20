@@ -7,6 +7,8 @@ import com.wallet.digitalwallet.model.request.CreateWalletRequest;
 import com.wallet.digitalwallet.model.response.WalletResponse;
 import com.wallet.digitalwallet.repository.CustomerRepository;
 import com.wallet.digitalwallet.repository.WalletRepository;
+import com.wallet.digitalwallet.utils.ErrorMessages;
+import com.wallet.digitalwallet.utils.WalletResponseConverter;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,72 +22,54 @@ import java.util.List;
 public class WalletService {
     private final WalletRepository walletRepository;
     private final CustomerRepository customerRepository;
+    private final WalletResponseConverter walletToWalletResponseConverter;
     private final JwtService jwtService;
 
     public WalletResponse createWallet(final CreateWalletRequest createWalletRequest, String token) {
         String username = jwtService.extractUsername(token);
         String role = jwtService.extractRole(token);
-        Customer customer = customerRepository.findByTckn(createWalletRequest.tckn());
+        Customer customer = customerRepository.findById(createWalletRequest.customerId()).get();
         if(customer == null) {
-            log.error("Customer not found with TCKN: {}", createWalletRequest.tckn());
-            throw new RuntimeException("Customer not found with TCKN: " + createWalletRequest.tckn());
+            log.error("Customer not found with customerId: {}", createWalletRequest.customerId());
+            throw new RuntimeException(ErrorMessages.CUSTOMER_NOT_FOUND);
         }
-        if(!role.equals(Role.EMPLOYEE)){
+        if(!role.equals(Role.EMPLOYEE.name())){
             if(!customer.getUserName().equals(username)) {
                 log.error("Unauthorized access to wallet creation for customer with username: {}", customer.getUserName());
-                throw new RuntimeException("Unauthorized access to this wallet");
+                throw new RuntimeException(ErrorMessages.UNAUTHORIZED_ACCESS_TO_THIS_CUSTOMER);
             }
         }
 
         Wallet wallet = createWallet(createWalletRequest, customer);
 
         walletRepository.save(wallet);
-        log.info("Wallet created successfully for customer with TCKN: {}", createWalletRequest.tckn());
-        return new WalletResponse(
-                wallet.getId(),
-                wallet.getWalletName(),
-                wallet.getCurrency(),
-                wallet.isActiveForShopping(),
-                wallet.isActiveForWithdraw(),
-                wallet.getBalance(),
-                wallet.getUsableBalance(),
-                wallet.getCustomer().getTckn()
-        );
+        log.info("Wallet created successfully for customer{}", createWalletRequest.customerId());
+        return walletToWalletResponseConverter.convert(wallet);
     }
 
-    public List<WalletResponse> listWallets(String tckn, String token) {
-        Customer customer = customerRepository.findByTckn(tckn);
+    public List<WalletResponse> listWallets(Long customerId, String token) {
+        Customer customer = customerRepository.findById(customerId).get();
         if (customer == null) {
-            log.error("Customer not found with TCKN: {}", tckn);
-            throw new RuntimeException("Customer not found with TCKN: " + tckn);
+            log.error("Customer not found with customerId: {}", customerId);
+            throw new RuntimeException(ErrorMessages.CUSTOMER_NOT_FOUND);
         }
         String username = jwtService.extractUsername(token);
         String role = jwtService.extractRole(token);
-        if(!role.equals(Role.EMPLOYEE)){
+        if(!role.equals(Role.EMPLOYEE.name())) {
             if(!customer.getUserName().equals(username)) {
                 log.error("Unauthorized access to wallet creation for customer with username: {}", customer.getUserName());
-                throw new RuntimeException("Unauthorized access to this wallet");
+                throw new RuntimeException(ErrorMessages.UNAUTHORIZED_ACCESS_TO_THIS_CUSTOMER);
             }
         }
         List<Wallet> wallets = walletRepository.findByCustomerId(customer.getId());
         if (wallets.isEmpty()) {
-            log.error("No wallets found for customer with TCKN: {}", tckn);
-            throw new RuntimeException("No wallets found for customer with TCKN: " + tckn);
+            log.error("No wallets found for customerId: {}", customerId);
+            throw new RuntimeException(ErrorMessages.NO_WALLETS_FOUND_FOR_CUSTOMER);
         }
-        return wallets.stream()
-                .map(wallet -> new WalletResponse(
-                        wallet.getId(),
-                        wallet.getWalletName(),
-                        wallet.getCurrency(),
-                        wallet.isActiveForShopping(),
-                        wallet.isActiveForWithdraw(),
-                        wallet.getBalance(),
-                        wallet.getUsableBalance(),
-                        wallet.getCustomer().getTckn()))
-                .toList();
+        return walletToWalletResponseConverter.convertToResponseList(wallets);
     }
 
-    private static Wallet createWallet(CreateWalletRequest createWalletRequest, Customer customer) {
+    private Wallet createWallet(CreateWalletRequest createWalletRequest, Customer customer) {
         return Wallet.builder().walletName(createWalletRequest.walletName())
                 .currency(createWalletRequest.currency())
                 .customer(customer)

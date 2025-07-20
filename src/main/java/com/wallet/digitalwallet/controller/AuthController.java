@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthenticationManager authenticationManager;
@@ -27,11 +27,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> registerUser(@RequestBody final RegisterRequest request) {
-        try {
-            return new ResponseEntity<>(userDetailsService.registerUser(request), HttpStatus.OK);
-        } catch (Exception e) {
-            throw new RuntimeException();
-        }
+        return new ResponseEntity<>(userDetailsService.registerUser(request), HttpStatus.OK);
     }
 
     @PostMapping("/authenticate")

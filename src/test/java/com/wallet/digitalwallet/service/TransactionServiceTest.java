@@ -77,6 +77,7 @@ class TransactionServiceTest {
         wallet.setBalance(BigDecimal.valueOf(1000));
         wallet.setUsableBalance(BigDecimal.valueOf(1000));
         wallet.setActiveForWithdraw(true);
+        wallet.setActiveForShopping(true);
 
         TransactionRequest request = new TransactionRequest(1L, BigDecimal.valueOf(500), PartyType.IBAN);
 

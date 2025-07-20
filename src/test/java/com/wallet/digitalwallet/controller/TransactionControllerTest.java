@@ -77,7 +77,7 @@ class TransactionControllerTest {
 
     @Test
     void approveTransactionShouldReturnTransactionResponseWhenRequestIsValid() {
-        TransactionApprovalRequest request = new TransactionApprovalRequest(1234L, TransactionStatus.PENDING);
+        TransactionApprovalRequest request = new TransactionApprovalRequest(1234L, TransactionStatus.APPROVED);
         TransactionResponse response = new TransactionResponse(1234L, 1234L, TransactionType.WITHDRAWAL, TransactionStatus.APPROVED, new BigDecimal(100.0), new BigDecimal(90.0), null);
 
         when(transactionService.changeTransactionStatus(request, "testToken")).thenReturn(response);

@@ -75,7 +75,7 @@ public class TransactionService {
         Wallet wallet = walletRepository.findById(transactionRequest.walletId())
                 .orElseThrow(() -> new RuntimeException(ErrorMessages.WALLET_NOT_FOUND));
 
-       if(!wallet.isActiveForWithdraw() || !wallet.isActiveForShopping()) {
+       if(!wallet.isActiveForWithdraw()) {
            throw new RuntimeException(ErrorMessages.WITHDRAWALS_ARE_NOT_ALLOWED_FOR_THIS_WALLET);
        }else if ( !wallet.isActiveForShopping()){
            throw new RuntimeException(ErrorMessages.SHOPPING_IS_NOT_ALLOWED_FOR_THIS_WALLET);

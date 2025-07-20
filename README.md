@@ -41,19 +41,21 @@ cd digital-wallet
 
 
 ### 3. Project Structure
+```json
 
 src/
 ├── controller/       -> REST API controllers
 ├── service/          -> Business logic layer
 ├── repository/       -> JPA repositories for data access
-├── config/           -> Security configuration, JWT setup, CORS, etc.
+├── config/           -> Security configuration, JWT setup.
 ├── model/
 │   ├── request/      -> DTOs for incoming requests
 │   └── response/     -> DTOs for outgoing responses
 ├── entity/           -> JPA entity classes (mapped to DB tables)
-├── filter/           -> JWT authentication and authorization filter
+├── filter/           -> JWT authentication filter
 ├── utils/            -> Converter classes and helper utilities
-└── exception/        -> Custom exceptions and global exception handlers
+└── exception/        -> Global exception handlers
+```
 
 ### 4. API Documentation
 #### 1- POST /api/v1/auth/register

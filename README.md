@@ -179,7 +179,7 @@ Retrieves all wallets belonging to the specified customer.
 ```
 ### 5- POST /api/v1/transaction/deposit
 
-Retrieves all wallets belonging to the specified customer.
+Creates a new deposit transaction for a wallet.
 
 **Request Headers:**
 - `Authorization: Bearer <token>`
@@ -208,7 +208,7 @@ Retrieves all wallets belonging to the specified customer.
 
 ### 6- POST /api/v1/transaction/withdraw
 
-Retrieves all wallets belonging to the specified customer.
+Creates a new withdrawal transaction for a wallet.
 
 **Request Headers:**
 - `Authorization: Bearer <token>`

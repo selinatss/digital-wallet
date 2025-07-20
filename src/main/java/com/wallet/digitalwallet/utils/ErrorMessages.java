@@ -14,4 +14,5 @@ public class ErrorMessages {
     public static final String CUSTOMER_NOT_FOUND = "Customer not found";
     public static final String UNAUTHORIZED_ACCESS_TO_THIS_CUSTOMER = "Unauthorized access to this customer";
     public static final String NO_WALLETS_FOUND_FOR_CUSTOMER = "No wallets found for customer";
+    public static final String SHOPPING_IS_NOT_ALLOWED_FOR_THIS_WALLET = "Shopping is not allowed for this wallet";
 }

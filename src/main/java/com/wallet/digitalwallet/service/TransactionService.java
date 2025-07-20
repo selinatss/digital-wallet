@@ -75,8 +75,10 @@ public class TransactionService {
         Wallet wallet = walletRepository.findById(transactionRequest.walletId())
                 .orElseThrow(() -> new RuntimeException(ErrorMessages.WALLET_NOT_FOUND));
 
-       if(!wallet.isActiveForWithdraw()){
+       if(!wallet.isActiveForWithdraw() || !wallet.isActiveForShopping()) {
            throw new RuntimeException(ErrorMessages.WITHDRAWALS_ARE_NOT_ALLOWED_FOR_THIS_WALLET);
+       }else if ( !wallet.isActiveForShopping()){
+           throw new RuntimeException(ErrorMessages.SHOPPING_IS_NOT_ALLOWED_FOR_THIS_WALLET);
        }
 
         if(wallet.getUsableBalance().compareTo(transactionRequest.amount()) < 0){
@@ -94,7 +96,7 @@ public class TransactionService {
 
         if(transactionRequest.amount().compareTo(Constants.LIMIT_AMOUNT) > 0){
             transaction.setStatus(TransactionStatus.PENDING);
-            wallet.setBalance(wallet.getBalance().subtract(transactionRequest.amount()));
+            wallet.setUsableBalance(wallet.getUsableBalance().subtract(transactionRequest.amount()));
         } else {
             transaction.setStatus(TransactionStatus.APPROVED);
             wallet.setBalance(wallet.getBalance().subtract(transactionRequest.amount()));

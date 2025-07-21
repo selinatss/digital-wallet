@@ -63,7 +63,7 @@ src/
 Registers a new user (Customer or Employee) into the system.
 
 **Request Headers:**
-Bearer token is required for registration.
+Bearer token is not required for registration.
 
 **Request Body:**
 ```json
